@@ -15,12 +15,19 @@ export async function apiRequest(endpoint = "", options = {}) {
     };
   }
 
+  const isFormData = typeof FormData !== "undefined" && options.body instanceof FormData;
+
+  const defaultHeaders = {};
+  if (!isFormData) {
+    defaultHeaders["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(`${baseUrl}${endpoint}`, {
+    ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...defaultHeaders,
       ...(options.headers || {}),
     },
-    ...options,
   });
 
   if (!response.ok) {

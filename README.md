@@ -136,3 +136,288 @@ Before a PR is merged, confirm:
 - the branch is up to date with `main`
 
 
+
+```
+college-union-platform-team
+├─ backend
+│  ├─ README.md
+│  └─ supabase
+│     ├─ functions
+│     │  ├─ academic-moderate
+│     │  │  └─ index.ts
+│     │  └─ send-notification
+│     │     └─ index.ts
+│     ├─ migrations
+│     │  └─ 001_initial_schema.sql
+│     └─ seed
+│        └─ 001_demo.sql
+├─ contracts
+│  └─ API_CONTRACT.md
+├─ docs
+│  └─ TEAM_ASSIGNMENT.md
+├─ frontend
+│  ├─ docs
+│  │  ├─ API
+│  │  ├─ CONTRIBUTING.md
+│  │  ├─ DATABASE
+│  │  └─ SRS
+│  ├─ index.html
+│  ├─ package-lock.json
+│  ├─ package.json
+│  ├─ src
+│  │  ├─ App.jsx
+│  │  ├─ components
+│  │  │  ├─ common
+│  │  │  │  └─ PagePrimitives.jsx
+│  │  │  ├─ navigation
+│  │  │  │  └─ Sidebar.jsx
+│  │  │  └─ ui
+│  │  │     ├─ Card.jsx
+│  │  │     ├─ MediaPlaceholder.jsx
+│  │  │     ├─ PageHead.jsx
+│  │  │     ├─ Reveal.jsx
+│  │  │     ├─ RevealGroup.jsx
+│  │  │     └─ Stat.jsx
+│  │  ├─ data
+│  │  │  └─ demo
+│  │  │     ├─ events.js
+│  │  │     ├─ index.js
+│  │  │     ├─ materials.js
+│  │  │     ├─ modules.js
+│  │  │     ├─ opportunities.js
+│  │  │     ├─ pending.js
+│  │  │     └─ welfare.js
+│  │  ├─ features
+│  │  │  ├─ academic-maintainer
+│  │  │  │  ├─ components
+│  │  │  │  │  └─ ReviewQueue.jsx
+│  │  │  │  └─ pages
+│  │  │  │     └─ AcademicMaintainerPage.jsx
+│  │  │  ├─ academics
+│  │  │  │  ├─ components
+│  │  │  │  │  └─ UploadDemo.jsx
+│  │  │  │  └─ pages
+│  │  │  │     └─ AcademicsPage.jsx
+│  │  │  ├─ admin
+│  │  │  │  └─ pages
+│  │  │  │     ├─ AdminDashboardPage.jsx
+│  │  │  │     └─ AdminUsersPage.jsx
+│  │  │  ├─ announcements
+│  │  │  │  └─ pages
+│  │  │  │     └─ AnnouncementsPage.jsx
+│  │  │  ├─ auth
+│  │  │  │  └─ pages
+│  │  │  │     └─ LoginPage.jsx
+│  │  │  ├─ blood-bank
+│  │  │  │  └─ pages
+│  │  │  │     └─ BloodBankPage.jsx
+│  │  │  ├─ emergency
+│  │  │  │  └─ pages
+│  │  │  │     └─ EmergencyPage.jsx
+│  │  │  ├─ events
+│  │  │  │  └─ pages
+│  │  │  │     └─ EventsPage.jsx
+│  │  │  ├─ grievances
+│  │  │  │  └─ pages
+│  │  │  │     └─ GrievancesPage.jsx
+│  │  │  ├─ home
+│  │  │  │  └─ pages
+│  │  │  │     └─ HomePage.jsx
+│  │  │  ├─ magazine
+│  │  │  │  └─ pages
+│  │  │  │     └─ MagazinePage.jsx
+│  │  │  ├─ notifications
+│  │  │  │  └─ pages
+│  │  │  │     └─ NotificationsPage.jsx
+│  │  │  ├─ profile
+│  │  │  │  └─ pages
+│  │  │  │     └─ ProfilePage.jsx
+│  │  │  ├─ student-welfare
+│  │  │  │  └─ pages
+│  │  │  │     └─ StudentWelfarePage.jsx
+│  │  │  └─ university-map
+│  │  │     └─ pages
+│  │  │        └─ UniversityMapPage.jsx
+│  │  ├─ hooks
+│  │  │  └─ useScrollReveal.js
+│  │  ├─ layouts
+│  │  │  └─ StudentLayout.jsx
+│  │  ├─ lib
+│  │  │  ├─ constants.js
+│  │  │  └─ router.jsx
+│  │  ├─ main.jsx
+│  │  ├─ routes.jsx
+│  │  ├─ services
+│  │  │  ├─ api
+│  │  │  │  ├─ academicsService.js
+│  │  │  │  ├─ announcementsService.js
+│  │  │  │  ├─ bloodBankService.js
+│  │  │  │  ├─ emergencyService.js
+│  │  │  │  ├─ eventsService.js
+│  │  │  │  ├─ grievancesService.js
+│  │  │  │  ├─ http.js
+│  │  │  │  ├─ maintainerService.js
+│  │  │  │  ├─ notificationsService.js
+│  │  │  │  └─ welfareService.js
+│  │  │  ├─ auth
+│  │  │  │  ├─ authService.js
+│  │  │  │  └─ permissionService.js
+│  │  │  └─ storage
+│  │  │     └─ storageService.js
+│  │  ├─ styles
+│  │  │  ├─ animations.css
+│  │  │  └─ globals.css
+│  │  └─ types
+│  │     └─ index.js
+│  ├─ supabase
+│  │  ├─ functions
+│  │  ├─ migrations
+│  │  └─ seed
+│  ├─ tests
+│  └─ vite.config.js
+├─ README.md
+└─ STUDENT_WORKFLOW.md
+
+```
+```
+college-union-platform-team
+├─ backend
+│  ├─ README.md
+│  └─ supabase
+│     ├─ functions
+│     │  ├─ academic-moderate
+│     │  │  └─ index.ts
+│     │  └─ send-notification
+│     │     └─ index.ts
+│     ├─ migrations
+│     │  └─ 001_initial_schema.sql
+│     └─ seed
+│        └─ 001_demo.sql
+├─ contracts
+│  └─ API_CONTRACT.md
+├─ docs
+│  └─ TEAM_ASSIGNMENT.md
+├─ frontend
+│  ├─ docs
+│  │  ├─ API
+│  │  ├─ CONTRIBUTING.md
+│  │  ├─ DATABASE
+│  │  └─ SRS
+│  ├─ index.html
+│  ├─ package-lock.json
+│  ├─ package.json
+│  ├─ src
+│  │  ├─ App.jsx
+│  │  ├─ components
+│  │  │  ├─ common
+│  │  │  │  └─ PagePrimitives.jsx
+│  │  │  ├─ navigation
+│  │  │  │  └─ Sidebar.jsx
+│  │  │  └─ ui
+│  │  │     ├─ Card.jsx
+│  │  │     ├─ MediaPlaceholder.jsx
+│  │  │     ├─ PageHead.jsx
+│  │  │     ├─ Reveal.jsx
+│  │  │     ├─ RevealGroup.jsx
+│  │  │     └─ Stat.jsx
+│  │  ├─ data
+│  │  │  └─ demo
+│  │  │     ├─ events.js
+│  │  │     ├─ index.js
+│  │  │     ├─ materials.js
+│  │  │     ├─ modules.js
+│  │  │     ├─ opportunities.js
+│  │  │     ├─ pending.js
+│  │  │     └─ welfare.js
+│  │  ├─ features
+│  │  │  ├─ academic-maintainer
+│  │  │  │  ├─ components
+│  │  │  │  │  └─ ReviewQueue.jsx
+│  │  │  │  └─ pages
+│  │  │  │     └─ AcademicMaintainerPage.jsx
+│  │  │  ├─ academics
+│  │  │  │  ├─ components
+│  │  │  │  │  └─ UploadDemo.jsx
+│  │  │  │  └─ pages
+│  │  │  │     └─ AcademicsPage.jsx
+│  │  │  ├─ admin
+│  │  │  │  └─ pages
+│  │  │  │     ├─ AdminDashboardPage.jsx
+│  │  │  │     └─ AdminUsersPage.jsx
+│  │  │  ├─ announcements
+│  │  │  │  └─ pages
+│  │  │  │     └─ AnnouncementsPage.jsx
+│  │  │  ├─ auth
+│  │  │  │  └─ pages
+│  │  │  │     └─ LoginPage.jsx
+│  │  │  ├─ blood-bank
+│  │  │  │  └─ pages
+│  │  │  │     └─ BloodBankPage.jsx
+│  │  │  ├─ emergency
+│  │  │  │  └─ pages
+│  │  │  │     └─ EmergencyPage.jsx
+│  │  │  ├─ events
+│  │  │  │  └─ pages
+│  │  │  │     └─ EventsPage.jsx
+│  │  │  ├─ grievances
+│  │  │  │  └─ pages
+│  │  │  │     └─ GrievancesPage.jsx
+│  │  │  ├─ home
+│  │  │  │  └─ pages
+│  │  │  │     └─ HomePage.jsx
+│  │  │  ├─ magazine
+│  │  │  │  └─ pages
+│  │  │  │     └─ MagazinePage.jsx
+│  │  │  ├─ notifications
+│  │  │  │  └─ pages
+│  │  │  │     └─ NotificationsPage.jsx
+│  │  │  ├─ profile
+│  │  │  │  └─ pages
+│  │  │  │     └─ ProfilePage.jsx
+│  │  │  ├─ student-welfare
+│  │  │  │  └─ pages
+│  │  │  │     └─ StudentWelfarePage.jsx
+│  │  │  └─ university-map
+│  │  │     └─ pages
+│  │  │        └─ UniversityMapPage.jsx
+│  │  ├─ hooks
+│  │  │  └─ useScrollReveal.js
+│  │  ├─ layouts
+│  │  │  └─ StudentLayout.jsx
+│  │  ├─ lib
+│  │  │  ├─ constants.js
+│  │  │  └─ router.jsx
+│  │  ├─ main.jsx
+│  │  ├─ routes.jsx
+│  │  ├─ services
+│  │  │  ├─ api
+│  │  │  │  ├─ academicsService.js
+│  │  │  │  ├─ announcementsService.js
+│  │  │  │  ├─ bloodBankService.js
+│  │  │  │  ├─ emergencyService.js
+│  │  │  │  ├─ eventsService.js
+│  │  │  │  ├─ grievancesService.js
+│  │  │  │  ├─ http.js
+│  │  │  │  ├─ maintainerService.js
+│  │  │  │  ├─ notificationsService.js
+│  │  │  │  └─ welfareService.js
+│  │  │  ├─ auth
+│  │  │  │  ├─ authService.js
+│  │  │  │  └─ permissionService.js
+│  │  │  └─ storage
+│  │  │     └─ storageService.js
+│  │  ├─ styles
+│  │  │  ├─ animations.css
+│  │  │  └─ globals.css
+│  │  └─ types
+│  │     └─ index.js
+│  ├─ supabase
+│  │  ├─ functions
+│  │  ├─ migrations
+│  │  └─ seed
+│  ├─ tests
+│  └─ vite.config.js
+├─ README.md
+└─ STUDENT_WORKFLOW.md
+
+```

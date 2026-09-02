@@ -3,6 +3,7 @@ import { FileText, ShieldCheck, CheckCircle2, Flag, Clock3, AlertCircle, Lock } 
 import { Card } from "../../../components/common/PagePrimitives";
 import { maintainerService } from "../../../services/api/maintainerService";
 import { permissionService } from "../../../services/auth/permissionService";
+import { storageService } from "../../../services/storage/storageService";
 
 export default function ReviewQueue({ notify, user }) {
   const [pending, setPending] = useState([]);
@@ -43,9 +44,11 @@ export default function ReviewQueue({ notify, user }) {
       if (response.ok) {
         notify("Material approved ✓");
         setPending(pending.filter((m) => m.id !== materialId));
+      } else {
+        notify(response.error || "Error approving material");
       }
     } catch (err) {
-      notify("Error approving material");
+      notify(err.message || "Error approving material");
     }
   };
 
@@ -57,14 +60,38 @@ export default function ReviewQueue({ notify, user }) {
       return;
     }
 
+    const reason = window.prompt("Enter rejection reason (optional):");
+    if (reason === null) return; // User cancelled
+
     try {
-      const response = await maintainerService.rejectMaterial(materialId);
+      const response = await maintainerService.rejectMaterial(materialId, reason);
       if (response.ok) {
         notify("Material rejected ✗");
         setPending(pending.filter((m) => m.id !== materialId));
+      } else {
+        notify(response.error || "Error rejecting material");
       }
     } catch (err) {
-      notify("Error rejecting material");
+      notify(err.message || "Error rejecting material");
+    }
+  };
+
+  const handlePreview = async (material) => {
+    notify(`Loading preview for: ${material.title}`);
+    try {
+      if (!material.storagePath) {
+        // Fallback for demo mode items that don't have storagePath in map
+        notify("Preview not available for this item.");
+        return;
+      }
+      const res = await storageService.getDownloadUrl(material.storagePath);
+      if (res.ok && res.data?.url && res.data.url !== "#") {
+        window.open(res.data.url, "_blank");
+      } else {
+        notify("Failed to get preview link");
+      }
+    } catch (err) {
+      notify("Preview error");
     }
   };
 
@@ -118,7 +145,7 @@ export default function ReviewQueue({ notify, user }) {
                   {m.subject} · Sem {m.semester} · {m.uploadedBy} · {m.uploadedAt}
                 </span>
               </div>
-              <button className="iconbtn" onClick={() => notify("Material preview")}>
+              <button className="iconbtn" onClick={() => handlePreview(m)}>
                 <FileText size={17} />
               </button>
               <button
