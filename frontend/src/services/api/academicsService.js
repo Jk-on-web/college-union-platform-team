@@ -83,17 +83,33 @@ export const academicsService = {
     return apiRequest("/api/academics/departments", { method: "GET" });
   },
 
-  /**
+/**
    * 2. GET /api/academics/departments/{id}/semesters
    */
   async getSemesters(departmentId = "") {
+    const defaultSemesters = [
+      { id: "sem-1", semester_number: 1, name: "Semester 1 (S1)" },
+      { id: "sem-2", semester_number: 2, name: "Semester 2 (S2)" },
+      { id: "sem-3", semester_number: 3, name: "Semester 3 (S3)" },
+      { id: "sem-4", semester_number: 4, name: "Semester 4 (S4)" },
+      { id: "sem-5", semester_number: 5, name: "Semester 5 (S5)" },
+      { id: "sem-6", semester_number: 6, name: "Semester 6 (S6)" },
+      { id: "sem-7", semester_number: 7, name: "Semester 7 (S7)" },
+      { id: "sem-8", semester_number: 8, name: "Semester 8 (S8)" },
+    ];
+
     if (isSupabaseConfigured()) {
       try {
         const query = departmentId
           ? `department_id=eq.${departmentId}&order=semester_number.asc`
           : "order=semester_number.asc";
         const data = await supabaseRest.get("semesters", query);
-        return { ok: true, data };
+        
+        if (data && data.length > 0) {
+          return { ok: true, data };
+        }
+        // Fallback if department has no specific semester rows
+        return { ok: true, data: defaultSemesters };
       } catch (err) {
         console.warn("Supabase getSemesters failed, using fallback:", err.message);
       }
@@ -103,7 +119,7 @@ export const academicsService = {
       const filtered = departmentId
         ? DEMO_SEMESTERS.filter((s) => s.department_id === departmentId)
         : DEMO_SEMESTERS;
-      return { ok: true, data: filtered.length ? filtered : DEMO_SEMESTERS };
+      return { ok: true, data: filtered.length ? filtered : defaultSemesters };
     }
 
     const endpoint = departmentId
@@ -111,7 +127,6 @@ export const academicsService = {
       : "/api/academics/semesters";
     return apiRequest(endpoint, { method: "GET" });
   },
-
   /**
    * 3. GET /api/academics/semesters/{id}/subjects
    */
