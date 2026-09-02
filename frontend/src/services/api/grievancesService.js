@@ -68,20 +68,20 @@ export const grievancesService = {
       const grievance = DEMO_GRIEVANCES.find((g) => g.id === grievanceId);
       return grievance
         ? {
-            ok: true,
-            data: {
-              ...grievance,
-              comments: [
-                {
-                  id: "cmt-001",
-                  author: "Administrator",
-                  text: "Your grievance has been received and assigned to the relevant department.",
-                  timestamp: "2026-08-27 10:30 AM",
-                },
-              ],
-              attachments: [],
-            },
-          }
+          ok: true,
+          data: {
+            ...grievance,
+            comments: [
+              {
+                id: "cmt-001",
+                author: "Administrator",
+                text: "Your grievance has been received and assigned to the relevant department.",
+                timestamp: "2026-08-27 10:30 AM",
+              },
+            ],
+            attachments: [],
+          },
+        }
         : { ok: false, status: 404, data: { error: "Grievance not found" } };
     }
     return apiRequest(`/api/grievances/${grievanceId}`, { method: "GET" });

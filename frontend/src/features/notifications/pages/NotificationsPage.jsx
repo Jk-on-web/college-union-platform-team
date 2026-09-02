@@ -48,6 +48,12 @@ export default function NotificationsPage() {
     }
   };
 
+  const markAsRead = async (id) => {
+    setNotifications(notifications.map((n2) => n2.id === id ? { ...n2, read: true } : n2));
+    await notificationsService.markAsRead(id);
+  }
+
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
@@ -83,8 +89,9 @@ export default function NotificationsPage() {
         <div className="notification-list">
           {notifications.map((n) => {
             const IconComponent = iconMap[n.icon] || Bell;
+
             return (
-              <Card className={!n.read ? "unread" : ""} key={n.id}>
+              <Card className={!n.read ? "unread" : ""} key={n.id} onClick={() => markAsRead(n.id)}>
                 <div className="notif">
                   <div className="notif-icon">
                     <IconComponent size={18} />
