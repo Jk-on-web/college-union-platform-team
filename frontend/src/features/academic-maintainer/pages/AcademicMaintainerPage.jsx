@@ -11,7 +11,6 @@ export default function AcademicMaintainerPage() {
   const [tab, setTab] = useState("review");
 
   const canAccess = permissionService.hasPermission("REVIEW_MATERIAL", user?.role);
-  const isAdmin   = user?.role === "admin";
 
   if (!canAccess) {
     return (
@@ -49,26 +48,11 @@ export default function AcademicMaintainerPage() {
           Review Queue
         </button>
 
-        {/* Departments tab is available to all maintainers to view requests,
-            but full CRUD is only shown to admins */}
         <button
           className={tab === "departments" ? "active" : ""}
           onClick={() => setTab("departments")}
         >
           Departments
-          {isAdmin && (
-            <span style={{
-              marginLeft: "5px",
-              fontSize: "8px",
-              background: "var(--soft)",
-              color: "var(--brand)",
-              borderRadius: "20px",
-              padding: "2px 6px",
-              fontWeight: 800,
-            }}>
-              ADMIN
-            </span>
-          )}
         </button>
       </div>
 
@@ -79,19 +63,7 @@ export default function AcademicMaintainerPage() {
 
       {/* ── Department Management ─────────────────────────────────────────────── */}
       {tab === "departments" && (
-        isAdmin ? (
-          <DepartmentManager notify={notify} />
-        ) : (
-          /* Maintainers can see the section exists but can't CRUD */
-          <Card style={{ textAlign: "center", padding: "48px 24px" }}>
-            <Lock size={38} style={{ marginBottom: "12px", opacity: 0.4 }} />
-            <h3 style={{ margin: "0 0 6px", fontSize: "14px" }}>Admin Only</h3>
-            <p style={{ margin: 0, color: "var(--muted)", fontSize: "12px" }}>
-              Department creation, renaming, and deletion require admin privileges.
-              Contact a platform admin to make changes.
-            </p>
-          </Card>
-        )
+        <DepartmentManager notify={notify} />
       )}
     </>
   );
