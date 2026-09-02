@@ -27,12 +27,12 @@ import { permissionService } from "../../../services/auth/permissionService";
 // ── Status badge helper ──────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
-    approved:       { label: "Approved",        className: "status green"  },
-    pending_review: { label: "Pending Review",  className: "status amber"  },
-    pending:        { label: "Pending Review",  className: "status amber"  },
-    rejected:       { label: "Rejected",        className: "status red"    },
-    unpublished:    { label: "Unpublished",      className: "status"        },
-    archived:       { label: "Archived",         className: "status"        },
+    approved:       { label: "Approved",       className: "status green"  },
+    pending_review: { label: "Pending Review", className: "status amber"  },
+    pending:        { label: "Pending Review", className: "status amber"  },
+    rejected:       { label: "Rejected",       className: "status red"    },
+    unpublished:    { label: "Unpublished",    className: "status"        },
+    archived:       { label: "Archived",       className: "status"        },
   };
   const cfg = map[status] || { label: status, className: "status" };
   return <span className={cfg.className}>{cfg.label}</span>;
@@ -65,7 +65,6 @@ const DEPT_COLORS = [
 function downloadFile(url, fileName) {
   if (!url || url === "#") return;
 
-  // Handle Base64 Data URLs by converting them into standard Blobs
   if (url.startsWith("data:")) {
     try {
       const arr = url.split(",");
@@ -92,7 +91,6 @@ function downloadFile(url, fileName) {
     }
   }
 
-  // Handle standard Blob or Web URLs
   const a = document.createElement("a");
   a.href = url;
   a.download = fileName;
@@ -126,9 +124,9 @@ export default function AcademicsPage() {
   const [matError, setMatError] = useState(null);
 
   // ── My Uploads state ──────────────────────────────────────────────────────
-  const [myUploads,   setMyUploads]   = useState([]);
-  const [uploadsLoading, setUploadsLoading] = useState(false);
-  const [uploadsError,   setUploadsError]   = useState(null);
+  const [myUploads,       setMyUploads]       = useState([]);
+  const [uploadsLoading,  setUploadsLoading]  = useState(false);
+  const [uploadsError,    setUploadsError]    = useState(null);
 
   // ── Department request modal ───────────────────────────────────────────────
   const [deptModalOpen, setDeptModalOpen] = useState(false);
@@ -331,7 +329,7 @@ export default function AcademicsPage() {
       </div>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* TAB 1 — Browse Materials                                            */}
+      {/* TAB 1 — Browse Materials                                           */}
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {tab === "browse" && (
         <>
@@ -515,16 +513,23 @@ export default function AcademicsPage() {
                     {TYPE_LABELS[m.type] || TYPE_LABELS[m.material_type] || m.type || "Material"}
                   </span>
                   <h3>{m.title}</h3>
-                  <p style={{ margin: "4px 0 10px", color: "var(--muted)", fontSize: "11px" }}>
-                    {m.subject}
-                    {m.semesterName || (m.semester ? ` · Sem ${m.semester}` : "")}
+                  
+                  {/* Clean Subject & Semester line with dot separator */}
+                  <p style={{ margin: "4px 0 8px", color: "var(--muted)", fontSize: "11px", fontWeight: 500 }}>
+                    {[
+                      m.subject,
+                      m.semesterName || (m.semester ? `Semester ${m.semester}` : "")
+                    ].filter(Boolean).join(" · ")}
                   </p>
+
+                  {/* Description with breathing room */}
                   {m.description && (
-                    <p style={{ margin: "0 0 10px", fontSize: "10px", color: "var(--muted)", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+                    <p style={{ margin: "0 0 12px", fontSize: "11px", color: "var(--ink)", opacity: 0.85, lineHeight: 1.45, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
                       {m.description}
                     </p>
                   )}
-                  <div className="material-meta">
+
+                  <div className="material-meta" style={{ marginTop: "auto", paddingTop: "8px" }}>
                     <small>
                       {m.views || m.views_count || 0} views · {m.downloads || m.downloads_count || 0} downloads
                     </small>
@@ -557,7 +562,7 @@ export default function AcademicsPage() {
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* TAB 2 — My Uploads                                                  */}
+      {/* TAB 2 — My Uploads                                                 */}
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {tab === "myuploads" && (
         <>
@@ -620,11 +625,13 @@ export default function AcademicsPage() {
                       </div>
                       <div className="row-main" style={{ flex: 1 }}>
                         <b>{m.title}</b>
-                        <span>
-                          {m.subject && `${m.subject} · `}
-                          {m.semesterName || (m.semester ? `Sem ${m.semester}` : "")}
-                          {m.type && ` · ${TYPE_LABELS[m.type] || m.type}`}
-                          {m.size && ` · ${m.size}`}
+                        <span style={{ display: "block", color: "var(--muted)", fontSize: "11px", marginTop: "2px" }}>
+                          {[
+                            m.subject,
+                            m.semesterName || (m.semester ? `Sem ${m.semester}` : ""),
+                            m.type ? (TYPE_LABELS[m.type] || m.type) : "",
+                            m.size,
+                          ].filter(Boolean).join(" · ")}
                         </span>
                         {m.status === "rejected" && m.rejection_reason && (
                           <span style={{ color: "var(--red)", fontSize: "9px", marginTop: "3px", display: "block" }}>
@@ -667,7 +674,7 @@ export default function AcademicsPage() {
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* TAB 3 — Departments                                                 */}
+      {/* TAB 3 — Departments                                                */}
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {tab === "departments" && (
         <>
@@ -753,7 +760,7 @@ export default function AcademicsPage() {
       )}
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* TAB — Maintainer Review                                             */}
+      {/* TAB — Maintainer Review                                            */}
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       {tab === "review" && (
         permissionService.hasPermission("REVIEW_MATERIAL", user?.role) ? (
