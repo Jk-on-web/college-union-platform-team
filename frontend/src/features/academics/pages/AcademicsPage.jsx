@@ -544,20 +544,6 @@ export default function AcademicsPage() {
               ))}
             </div>
           )}
-
-          {/* Department Request Modal */}
-          {deptModalOpen && (
-            <RequestDepartmentModal
-              notify={notify}
-              onClose={() => setDeptModalOpen(false)}
-              onSuccess={() => {
-                setDeptModalOpen(false);
-                academicsService.getApprovedDepartments().then((res) => {
-                  if (res.ok) setDepartments(res.data || []);
-                });
-              }}
-            />
-          )}
         </>
       )}
 
@@ -771,6 +757,20 @@ export default function AcademicsPage() {
             <p>Only maintainers and admins can review materials.</p>
           </Card>
         )
+      )}
+
+      {/* ── Global Modal (Mounted outside all tabs) ────────────────────────── */}
+      {deptModalOpen && (
+        <RequestDepartmentModal
+          notify={notify}
+          onClose={() => setDeptModalOpen(false)}
+          onSuccess={() => {
+            setDeptModalOpen(false);
+            academicsService.getApprovedDepartments().then((res) => {
+              if (res.ok) setDepartments(res.data || []);
+            });
+          }}
+        />
       )}
     </>
   );
