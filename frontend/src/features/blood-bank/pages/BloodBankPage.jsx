@@ -53,6 +53,7 @@ export default function BloodBankPage() {
   });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [unlockedContact, setUnlockedContact] = useState(null);
+  const [formError, setFormError] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -90,6 +91,7 @@ export default function BloodBankPage() {
   const handleOpenRequestModal = (donor = null) => {
     setTargetDonor(donor);
     setIsGeneralRequestModal(!donor);
+    setFormError(null);
     setRequestForm({
       bloodGroup: donor ? donor.bloodGroup : "O+",
       hospital: "City Medical Center, Emergency Ward",
@@ -103,8 +105,14 @@ export default function BloodBankPage() {
 
   const handleSubmitBloodRequest = async (e) => {
     e.preventDefault();
-    if (!requestForm.hospital || !requestForm.contact) {
-      notify("Please provide hospital location and emergency contact number.");
+    setFormError(null);
+
+    if (!requestForm.hospital.trim() || !requestForm.contact.trim() || requestForm.contact.trim() === "+91") {
+      setFormError("Hospital location and emergency contact number are mandatory fields.");
+      return;
+    }
+    if (!requestForm.notes.trim()) {
+      setFormError("Please provide patient details / medical notes.");
       return;
     }
 
@@ -115,9 +123,9 @@ export default function BloodBankPage() {
         hospital: requestForm.hospital,
         units: requestForm.units,
         urgency: requestForm.urgency,
-        contact: requestForm.contact,
-        notes: requestForm.notes,
-        requester: "Campus Emergency Request",
+        contact: targetDonor ? targetDonor.contact : requestForm.contact,
+        notes: targetDonor ? `Emergency request sent to ${targetDonor.name} (${targetDonor.department}). ${requestForm.notes}` : requestForm.notes,
+        requester: targetDonor ? `Request for ${targetDonor.name}` : "Campus Emergency Request",
         targetDonorName: targetDonor ? targetDonor.name : null,
       };
 
@@ -252,7 +260,7 @@ export default function BloodBankPage() {
           onClick={() => setActiveTab("requests")}
         >
           <Megaphone size={18} />
-          Sent Blood Requests
+          Blood Requests
           <span className="blood-tab-badge">{requests.length}</span>
         </button>
       </div>
@@ -295,7 +303,7 @@ export default function BloodBankPage() {
           </div>
           <div className="blood-stat-info">
             <strong>{requests.length}</strong>
-            <span>Active Sent Requests</span>
+            <span>Active Blood Requests</span>
           </div>
         </div>
       </div>
@@ -436,14 +444,14 @@ export default function BloodBankPage() {
         </>
       )}
 
-      {/* TAB 2: SENT BLOOD REQUESTS */}
+      {/* TAB 2: BLOOD REQUESTS */}
       {activeTab === "requests" && (
         <>
           <div className="blood-filter-section">
             <div className="blood-filter-top">
               <div>
                 <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
-                  All Sent Blood Requests ({requests.length})
+                  Blood Requests ({requests.length})
                 </h3>
                 <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
                   Emergency and general blood requests registered in the platform database (`blood_requests` table).
@@ -628,6 +636,27 @@ export default function BloodBankPage() {
               </div>
             ) : (
               <form onSubmit={handleSubmitBloodRequest}>
+                {formError && (
+                  <div
+                    style={{
+                      background: "#fff1f2",
+                      border: "1px solid #fecdd3",
+                      color: "#b91c1c",
+                      padding: "10px 14px",
+                      borderRadius: "10px",
+                      marginBottom: "14px",
+                      fontSize: "12px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontWeight: "600",
+                    }}
+                  >
+                    <AlertCircle size={16} color="#e11d48" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
                 <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "14px", lineHeight: "1.4" }}>
                   In accordance with privacy rules, submitting this form registers a record in `blood_requests` and notifies the donor.
                 </p>
@@ -659,8 +688,9 @@ export default function BloodBankPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                   <div className="form-group">
-                    <label>Units Required</label>
+                    <label>Units Required *</label>
                     <select
+                      required
                       value={requestForm.units}
                       onChange={(e) => setRequestForm({ ...requestForm, units: e.target.value })}
                     >
@@ -671,8 +701,9 @@ export default function BloodBankPage() {
                   </div>
 
                   <div className="form-group">
-                    <label>Urgency Level</label>
+                    <label>Urgency Level *</label>
                     <select
+                      required
                       value={requestForm.urgency}
                       onChange={(e) => setRequestForm({ ...requestForm, urgency: e.target.value })}
                     >
@@ -695,10 +726,11 @@ export default function BloodBankPage() {
                 </div>
 
                 <div className="form-group">
-                  <label>Notes / Patient Details</label>
+                  <label>Notes / Patient Details *</label>
                   <textarea
                     rows={2}
-                    placeholder="Any specific medical notes or patient info..."
+                    required
+                    placeholder="Provide specific medical notes or patient details..."
                     value={requestForm.notes}
                     onChange={(e) => setRequestForm({ ...requestForm, notes: e.target.value })}
                   />
