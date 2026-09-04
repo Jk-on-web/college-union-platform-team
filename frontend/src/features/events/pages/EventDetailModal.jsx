@@ -7,6 +7,7 @@ import {
   Users,
   CheckCircle2,
   Trash2,
+  Edit3,
   Mic,
   ListOrdered,
   AlertTriangle,
@@ -19,6 +20,7 @@ export default function EventDetailModal({
   onClose,
   onRegisterToggle,
   onDelete,
+  onEdit,
   notify,
   isAdmin,
   userRole,
@@ -28,6 +30,12 @@ export default function EventDetailModal({
   const [registering, setRegistering] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const canEdit = permissionService.hasPermission("EDIT_EVENT", userRole) || isAdmin;
+
+  useEffect(() => {
+    setDetail((prev) => ({ ...prev, ...event }));
+  }, [event]);
 
   useEffect(() => {
     let isMounted = true;
@@ -129,6 +137,34 @@ export default function EventDetailModal({
           boxShadow: "0 24px 70px rgba(0,0,0,0.3)",
         }}
       >
+        {/* Cover Image Banner */}
+        {detail.image && (detail.image.startsWith("http") || detail.image.startsWith("data:")) && (
+          <div
+            style={{
+              width: "100%",
+              height: "170px",
+              borderRadius: "12px",
+              overflow: "hidden",
+              marginBottom: "16px",
+              background: "#0d1322",
+              border: "1px solid var(--line)",
+            }}
+          >
+            <img
+              src={detail.image}
+              alt={detail.title}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+              onError={(e) => {
+                e.currentTarget.parentElement.style.display = "none";
+              }}
+            />
+          </div>
+        )}
+
         {/* Header Bar */}
         <div
           style={{
@@ -453,8 +489,22 @@ export default function EventDetailModal({
             flexWrap: "wrap",
           }}
         >
-          {isAdmin ? (
-            !confirmDelete && (
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {canEdit && (
+              <button
+                type="button"
+                className="outline"
+                onClick={() => onEdit && onEdit(detail)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <Edit3 size={14} /> Edit Event
+              </button>
+            )}
+            {isAdmin && !confirmDelete && (
               <button
                 type="button"
                 className="reject"
@@ -467,12 +517,13 @@ export default function EventDetailModal({
               >
                 <Trash2 size={14} /> Delete Event
               </button>
-            )
-          ) : (
-            <div style={{ fontSize: "11px", color: "var(--muted)" }}>
-              {detail.registered ? "You are attending this event." : "Open for all students."}
-            </div>
-          )}
+            )}
+            {!canEdit && !isAdmin && (
+              <div style={{ fontSize: "11px", color: "var(--muted)" }}>
+                {detail.registered ? "You are attending this event." : "Open for all students."}
+              </div>
+            )}
+          </div>
 
           <div style={{ display: "flex", gap: "10px", marginLeft: "auto" }}>
             <button type="button" className="outline" onClick={onClose}>

@@ -10,6 +10,7 @@ import {
   Users,
   CheckCircle2,
   Trash2,
+  Edit3,
   Sparkles,
   ShieldCheck,
 } from "lucide-react";
@@ -17,6 +18,7 @@ import { Card, PageHead, RevealGroup } from "../../../components/common/PagePrim
 import { eventsService } from "../../../services/api/eventsService";
 import { permissionService } from "../../../services/auth/permissionService";
 import NewEventModal from "./NewEventModal";
+import EditEventModal from "./EditEventModal";
 import EventDetailModal from "./EventDetailModal";
 
 export default function EventsPage() {
@@ -33,10 +35,12 @@ export default function EventsPage() {
 
   // Modal states
   const [showNewModal, setShowNewModal] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const userRole = user?.role || "student";
   const canCreate = permissionService.hasPermission("CREATE_EVENT", userRole);
+  const canEdit = permissionService.hasPermission("EDIT_EVENT", userRole) || permissionService.hasRole(userRole, ["admin"]);
   const isAdmin = permissionService.hasRole(userRole, ["admin"]);
 
   useEffect(() => {
@@ -70,6 +74,24 @@ export default function EventsPage() {
 
   const handleEventCreated = (newEvent) => {
     setEvents((prev) => [newEvent, ...prev]);
+  };
+
+  const handleEventUpdated = (updatedEvent) => {
+    setEvents((prev) =>
+      prev.map((e) => (e.id === updatedEvent.id ? { ...e, ...updatedEvent } : e))
+    );
+    if (selectedEvent?.id === updatedEvent.id) {
+      setSelectedEvent((prev) => ({ ...prev, ...updatedEvent }));
+    }
+  };
+
+  const handleOpenEditModal = (e, evt) => {
+    e.stopPropagation();
+    if (!canEdit) {
+      notify("Only Administrators can edit events");
+      return;
+    }
+    setEditingEvent(evt);
   };
 
   const handleEventDeleted = (eventId) => {
@@ -296,7 +318,9 @@ export default function EventsPage() {
                 className="poster"
                 style={{
                   background:
-                    evt.category === "sports"
+                    evt.image && (evt.image.startsWith("http") || evt.image.startsWith("data:"))
+                      ? `linear-gradient(rgba(12, 17, 34, 0.45), rgba(12, 17, 34, 0.85)), url("${evt.image}") center/cover no-repeat`
+                      : evt.category === "sports"
                       ? "linear-gradient(135deg, #172d1f, #2e7d32)"
                       : evt.category === "workshop"
                       ? "linear-gradient(135deg, #2b173d, #7b1fa2)"
@@ -307,25 +331,46 @@ export default function EventsPage() {
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ textTransform: "uppercase", fontSize: "9px" }}>{evt.category}</span>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      onClick={(e) => handleQuickDelete(e, evt)}
-                      title="Delete Event (Admin)"
-                      style={{
-                        background: "rgba(0,0,0,0.35)",
-                        border: "1px solid rgba(255,255,255,0.2)",
-                        color: "#ffcdd2",
-                        borderRadius: "6px",
-                        padding: "4px 6px",
-                        cursor: "pointer",
-                        display: "grid",
-                        placeItems: "center",
-                      }}
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  )}
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    {canEdit && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleOpenEditModal(e, evt)}
+                        title="Edit Event"
+                        style={{
+                          background: "rgba(0,0,0,0.35)",
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          color: "#ffffff",
+                          borderRadius: "6px",
+                          padding: "4px 6px",
+                          cursor: "pointer",
+                          display: "grid",
+                          placeItems: "center",
+                        }}
+                      >
+                        <Edit3 size={13} />
+                      </button>
+                    )}
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleQuickDelete(e, evt)}
+                        title="Delete Event (Admin)"
+                        style={{
+                          background: "rgba(0,0,0,0.35)",
+                          border: "1px solid rgba(255,255,255,0.2)",
+                          color: "#ffcdd2",
+                          borderRadius: "6px",
+                          padding: "4px 6px",
+                          cursor: "pointer",
+                          display: "grid",
+                          placeItems: "center",
+                        }}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -405,9 +450,20 @@ export default function EventsPage() {
           onClose={() => setSelectedEvent(null)}
           onRegisterToggle={handleRegisterToggle}
           onDelete={handleEventDeleted}
+          onEdit={(evt) => setEditingEvent(evt)}
           notify={notify}
           isAdmin={isAdmin}
           userRole={userRole}
+        />
+      )}
+
+      {/* Edit Event Modal */}
+      {editingEvent && (
+        <EditEventModal
+          event={editingEvent}
+          onClose={() => setEditingEvent(null)}
+          onUpdated={handleEventUpdated}
+          notify={notify}
         />
       )}
     </>

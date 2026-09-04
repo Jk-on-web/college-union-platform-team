@@ -157,7 +157,7 @@ export const eventsService = {
         category: eventData.category || "symposium",
         attendees: 0,
         registered: false,
-        image: eventData.image || "/images/events/default.jpg",
+        image: eventData.image?.trim() ? eventData.image.trim() : "",
         speakers: Array.isArray(eventData.speakers)
           ? eventData.speakers
           : typeof eventData.speakers === "string" && eventData.speakers.trim()
@@ -204,6 +204,49 @@ export const eventsService = {
     }
 
     return apiRequest(`/api/events/${eventId}`, { method: "DELETE" });
+  },
+
+  async updateEvent(eventId, eventData) {
+    if (DEMO_MODE) {
+      const allEvents = getStoredEvents();
+      const targetIndex = allEvents.findIndex((e) => e.id === eventId);
+      if (targetIndex === -1) {
+        return { ok: false, status: 404, data: { error: "Event not found" } };
+      }
+
+      const existing = allEvents[targetIndex];
+      const updatedEvent = {
+        ...existing,
+        title: eventData.title ?? existing.title,
+        description: eventData.description ?? existing.description,
+        date: eventData.date ?? existing.date,
+        time: eventData.time ?? existing.time,
+        venue: eventData.venue ?? existing.venue,
+        category: eventData.category ?? existing.category,
+        image: typeof eventData.image === "string" ? eventData.image.trim() : existing.image,
+        speakers: Array.isArray(eventData.speakers)
+          ? eventData.speakers
+          : typeof eventData.speakers === "string"
+          ? eventData.speakers.split(",").map((s) => s.trim()).filter(Boolean)
+          : existing.speakers || [],
+        agenda: Array.isArray(eventData.agenda)
+          ? eventData.agenda
+          : typeof eventData.agenda === "string"
+          ? eventData.agenda.split("\n").map((a) => a.trim()).filter(Boolean)
+          : existing.agenda || [],
+      };
+
+      const updated = [...allEvents];
+      updated[targetIndex] = updatedEvent;
+      saveStoredEvents(updated);
+
+      return { ok: true, data: updatedEvent };
+    }
+
+    return apiRequest(`/api/events/${eventId}`, {
+      method: "PUT",
+      body: JSON.stringify(eventData),
+    });
   },
 
   async registerForEvent(eventId) {

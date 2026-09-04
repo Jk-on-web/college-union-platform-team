@@ -1,30 +1,28 @@
 import React, { useState, useRef } from "react";
 import {
   X,
-  Calendar,
-  Clock,
-  MapPin,
-  Tag,
-  Users,
-  Sparkles,
-  AlertCircle,
+  Edit3,
   Image,
   Upload,
-  Link as LinkIcon,
+  AlertCircle,
 } from "lucide-react";
 import { eventsService } from "../../../services/api/eventsService";
 
-export default function NewEventModal({ onClose, onCreated, notify }) {
+export default function EditEventModal({ event, onClose, onUpdated, notify }) {
   const [form, setForm] = useState({
-    title: "",
-    category: "symposium",
-    date: "",
-    time: "10:00 AM",
-    venue: "",
-    description: "",
-    image: "",
-    speakers: "",
-    agenda: "",
+    title: event?.title || "",
+    category: event?.category || "symposium",
+    date: event?.date || "",
+    time: event?.time || "10:00 AM",
+    venue: event?.venue || "",
+    description: event?.description || "",
+    image: event?.image || "",
+    speakers: Array.isArray(event?.speakers)
+      ? event?.speakers.join(", ")
+      : event?.speakers || "",
+    agenda: Array.isArray(event?.agenda)
+      ? event?.agenda.join("\n")
+      : event?.agenda || "",
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -46,8 +44,8 @@ export default function NewEventModal({ onClose, onCreated, notify }) {
         return;
       }
       const reader = new FileReader();
-      reader.onload = (event) => {
-        setForm((prev) => ({ ...prev, image: event.target.result }));
+      reader.onload = (uploadEvt) => {
+        setForm((prev) => ({ ...prev, image: uploadEvt.target.result }));
         if (error) setError(null);
       };
       reader.readAsDataURL(file);
@@ -77,16 +75,16 @@ export default function NewEventModal({ onClose, onCreated, notify }) {
     setError(null);
 
     try {
-      const response = await eventsService.createEvent(form);
+      const response = await eventsService.updateEvent(event.id, form);
       if (response.ok) {
-        onCreated(response.data);
-        notify(`Event "${form.title}" published successfully! ✓`);
+        onUpdated(response.data);
+        notify(`Event "${form.title}" updated successfully! ✓`);
         onClose();
       } else {
-        setError(response.data?.error || "Failed to create event. Please try again.");
+        setError(response.data?.error || "Failed to update event. Please try again.");
       }
     } catch (err) {
-      setError(err.message || "An unexpected error occurred while creating the event.");
+      setError(err.message || "An unexpected error occurred while updating the event.");
     } finally {
       setSubmitting(false);
     }
@@ -97,8 +95,8 @@ export default function NewEventModal({ onClose, onCreated, notify }) {
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 100,
-        background: "rgba(11, 16, 32, 0.6)",
+        zIndex: 110,
+        background: "rgba(11, 16, 32, 0.65)",
         backdropFilter: "blur(4px)",
         display: "flex",
         alignItems: "center",
@@ -142,14 +140,15 @@ export default function NewEventModal({ onClose, onCreated, notify }) {
                 placeItems: "center",
               }}
             >
-              <Sparkles size={19} />
+              <Edit3 size={19} />
             </div>
             <div>
-              <b style={{ fontSize: "16px", display: "block" }}>Create New Campus Event</b>
-              <small style={{ color: "var(--muted)" }}>Admins can publish events visible to all students</small>
+              <b style={{ fontSize: "16px", display: "block" }}>Edit Campus Event</b>
+              <small style={{ color: "var(--muted)" }}>Update event schedule, venue, or details</small>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             style={{
               background: "transparent",
@@ -484,7 +483,7 @@ export default function NewEventModal({ onClose, onCreated, notify }) {
               style={{ flex: 1, height: "42px" }}
               disabled={submitting}
             >
-              {submitting ? "Publishing event..." : "Publish Event"}
+              {submitting ? "Saving changes..." : "Save Changes"}
             </button>
           </div>
         </form>
