@@ -1,13 +1,15 @@
 import { apiRequest } from "./http";
 import { DEMO_MODE } from "../../lib/constants";
 
-const DEMO_NOTIFICATIONS = [
+const STORAGE_KEY = "unionhub-notifications";
+
+const INITIAL_NOTIFICATIONS = [
   {
     id: "notif-001",
     type: "event",
     title: "Tech Symposium Registration Open",
     message: "Registration is now open for the Annual Tech Symposium on Sep 15",
-    timestamp: "2026-08-29 2:30 PM",
+    timestamp: "Today · 2:30 PM",
     read: false,
     actionUrl: "/events",
     icon: "calendar",
@@ -17,7 +19,7 @@ const DEMO_NOTIFICATIONS = [
     type: "welfare",
     title: "Merit Scholarship Application Deadline",
     message: "Reminder: Merit Scholarship applications close on Sep 30, 2026",
-    timestamp: "2026-08-29 10:15 AM",
+    timestamp: "Today · 10:15 AM",
     read: false,
     actionUrl: "/welfare",
     icon: "award",
@@ -27,27 +29,78 @@ const DEMO_NOTIFICATIONS = [
     type: "academics",
     title: "New Study Materials Available",
     message: "Operating Systems notes have been uploaded to the academics section",
-    timestamp: "2026-08-28 4:45 PM",
+    timestamp: "Yesterday · 4:45 PM",
     read: true,
     actionUrl: "/academics",
     icon: "book",
   },
 ];
 
+function getStoredNotifications() {
+  if (typeof window === "undefined") return INITIAL_NOTIFICATIONS;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_NOTIFICATIONS));
+      return INITIAL_NOTIFICATIONS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : INITIAL_NOTIFICATIONS;
+  } catch {
+    return INITIAL_NOTIFICATIONS;
+  }
+}
+
+function saveStoredNotifications(notifs) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(notifs));
+    window.dispatchEvent(new CustomEvent("notifications-changed"));
+  } catch (e) {
+    console.error("Failed to save notifications in localStorage", e);
+  }
+}
+
 export const notificationsService = {
   async getNotifications(filters = {}) {
     if (DEMO_MODE) {
-      const unread = filters.unreadOnly
-        ? DEMO_NOTIFICATIONS.filter((n) => !n.read)
-        : DEMO_NOTIFICATIONS;
+      const all = getStoredNotifications();
+      const unread = filters.unreadOnly ? all.filter((n) => !n.read) : all;
       return { ok: true, data: unread };
     }
     const params = new URLSearchParams(filters).toString();
     return apiRequest(`/api/notifications?${params}`, { method: "GET" });
   },
 
+  async createNotification(data) {
+    if (DEMO_MODE) {
+      const all = getStoredNotifications();
+      const newNotif = {
+        id: `notif-${Date.now().toString().slice(-4)}`,
+        type: data.type || "announcement",
+        title: data.title,
+        message: data.message || "",
+        timestamp: "Just now",
+        read: false,
+        actionUrl: data.actionUrl || "/",
+        icon: data.icon || "megaphone",
+      };
+      const updated = [newNotif, ...all];
+      saveStoredNotifications(updated);
+      return { ok: true, data: newNotif };
+    }
+
+    return apiRequest("/api/notifications", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
   async markAsRead(notificationId) {
     if (DEMO_MODE) {
+      const all = getStoredNotifications();
+      const updated = all.map((n) => (n.id === notificationId ? { ...n, read: true } : n));
+      saveStoredNotifications(updated);
       return {
         ok: true,
         data: { id: notificationId, read: true },
@@ -61,9 +114,12 @@ export const notificationsService = {
 
   async markAllAsRead() {
     if (DEMO_MODE) {
+      const all = getStoredNotifications();
+      const updated = all.map((n) => ({ ...n, read: true }));
+      saveStoredNotifications(updated);
       return {
         ok: true,
-        data: { markedCount: DEMO_NOTIFICATIONS.filter((n) => !n.read).length },
+        data: { markedCount: all.filter((n) => !n.read).length },
       };
     }
     return apiRequest("/api/notifications/read-all", {
@@ -120,9 +176,21 @@ export const notificationsService = {
 
   getUnreadCount() {
     if (DEMO_MODE) {
-      return DEMO_NOTIFICATIONS.filter((n) => !n.read).length;
+      const all = getStoredNotifications();
+      return all.filter((n) => !n.read).length;
     }
     return 0;
+  },
+
+  onNotificationsChange(listener) {
+    if (typeof window === "undefined") return () => {};
+    const handler = () => listener(this.getUnreadCount());
+    window.addEventListener("notifications-changed", handler);
+    window.addEventListener("storage", handler);
+    return () => {
+      window.removeEventListener("notifications-changed", handler);
+      window.removeEventListener("storage", handler);
+    };
   },
 
   getNotificationTypes() {

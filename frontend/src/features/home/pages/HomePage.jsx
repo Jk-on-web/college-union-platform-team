@@ -3,7 +3,8 @@ import { useOutletContext } from "react-router-dom";
 import { Bell, BookOpen, CalendarDays, ChevronRight, ClipboardList, Droplets, GraduationCap, Map, ShieldAlert, Sparkles, ShieldCheck } from "lucide-react";
 import { events } from "../../../data/demo/events";
 import { Card, Reveal, RevealGroup, Stat } from "../../../components/common/PagePrimitives";
-export default function HomePage({ role, user }) { const { go } = useOutletContext();
+export default function HomePage({ role, user }) {
+  const { go, unreadCount = 0 } = useOutletContext();
   const firstName = user?.name?.split(" ")[0] || "there";
 
   return <>
@@ -14,7 +15,7 @@ export default function HomePage({ role, user }) { const { go } = useOutletConte
     </div></Reveal>
     <RevealGroup className="stats">
       <Stat icon={CalendarDays} label="Upcoming events" value="12" trend="+3 this week" />
-      <Stat icon={Bell} label="Unread updates" value="3" />
+      <Stat icon={Bell} label="Unread updates" value={unreadCount.toString()} />
       <Stat icon={BookOpen} label="Academic materials" value="620" trend="+28 this month" />
       <Stat icon={GraduationCap} label="Welfare opportunities" value="71" />
     </RevealGroup>
