@@ -300,15 +300,6 @@ export default function AcademicsPage() {
           </button>
         )}
 
-        {permissionService.hasPermission("REVIEW_MATERIAL", user?.role) && (
-          <button
-            className={tab === "review" ? "active" : ""}
-            onClick={handleReviewTab}
-          >
-            Maintainer review
-          </button>
-        )}
-
         <button
           className={tab === "departments" ? "active" : ""}
           onClick={() => setTab("departments")}
