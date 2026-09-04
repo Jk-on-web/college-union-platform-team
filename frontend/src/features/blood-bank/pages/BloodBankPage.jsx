@@ -18,6 +18,10 @@ import {
   Send,
   Building2,
   FileText,
+  PlusCircle,
+  MapPin,
+  Users,
+  Megaphone,
 } from "lucide-react";
 import { Card, PageHead } from "../../../components/common/PagePrimitives";
 import { bloodBankService } from "../../../services/api/bloodBankService";
@@ -25,18 +29,22 @@ import "../BloodBank.css";
 
 export default function BloodBankPage() {
   const { notify } = useOutletContext();
+  const [activeTab, setActiveTab] = useState("donors"); // "donors" | "requests"
   const [donors, setDonors] = useState([]);
   const [requests, setRequests] = useState([]);
   const [helplines, setHelplines] = useState([]);
   const [selectedBloodGroup, setSelectedBloodGroup] = useState("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [eligibleOnly, setEligibleOnly] = useState(false);
+  const [requestFilter, setRequestFilter] = useState("ALL"); // "ALL" | "CRITICAL" | "SEARCHING" | "FULFILLED"
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Request modal state
   const [targetDonor, setTargetDonor] = useState(null);
+  const [isGeneralRequestModal, setIsGeneralRequestModal] = useState(false);
   const [requestForm, setRequestForm] = useState({
+    bloodGroup: "O+",
     hospital: "",
     units: "1 unit",
     urgency: "high",
@@ -79,14 +87,16 @@ export default function BloodBankPage() {
     loadData();
   };
 
-  const handleOpenRequestModal = (donor) => {
+  const handleOpenRequestModal = (donor = null) => {
     setTargetDonor(donor);
+    setIsGeneralRequestModal(!donor);
     setRequestForm({
+      bloodGroup: donor ? donor.bloodGroup : "O+",
       hospital: "City Medical Center, Emergency Ward",
       units: "1 unit",
       urgency: "high",
       contact: "+91 ",
-      notes: `Urgent requirement for ${donor.bloodGroup} blood.`,
+      notes: donor ? `Urgent requirement for ${donor.bloodGroup} blood.` : "Emergency blood required.",
     });
     setUnlockedContact(null);
   };
@@ -101,7 +111,7 @@ export default function BloodBankPage() {
     setSubmittingRequest(true);
     try {
       const payload = {
-        bloodGroup: targetDonor ? targetDonor.bloodGroup : selectedBloodGroup === "ALL" ? "O+" : selectedBloodGroup,
+        bloodGroup: targetDonor ? targetDonor.bloodGroup : requestForm.bloodGroup,
         hospital: requestForm.hospital,
         units: requestForm.units,
         urgency: requestForm.urgency,
@@ -118,6 +128,7 @@ export default function BloodBankPage() {
           setUnlockedContact(targetDonor.contact);
         } else {
           setTargetDonor(null);
+          setIsGeneralRequestModal(false);
         }
         loadData();
       }
@@ -125,6 +136,18 @@ export default function BloodBankPage() {
       notify("Error submitting blood request");
     } finally {
       setSubmittingRequest(false);
+    }
+  };
+
+  const handleFulfillRequest = async (requestId) => {
+    try {
+      const res = await bloodBankService.updateRequestStatus(requestId, "fulfilled");
+      if (res.ok) {
+        notify("Request marked as FULFILLED! Thank you.");
+        loadData();
+      }
+    } catch (err) {
+      notify("Error updating request status");
     }
   };
 
@@ -140,12 +163,20 @@ export default function BloodBankPage() {
     return isEligible;
   }).length;
 
+  // Filter requests for requests tab
+  const filteredRequests = requests.filter((req) => {
+    if (requestFilter === "CRITICAL") return req.urgency === "critical" || req.urgency === "high";
+    if (requestFilter === "SEARCHING") return req.status === "searching" || req.status === "open";
+    if (requestFilter === "FULFILLED") return req.status === "fulfilled";
+    return true;
+  });
+
   return (
     <div className="blood-bank-container">
       <PageHead
         eyebrow="CAMPUS LIFE SAVER NETWORK"
-        title="Blood Bank & Donor Registry"
-        desc="Browse verified student blood donors, track donation eligibility, and submit official emergency blood requests."
+        title="Blood Bank & Emergency Portal"
+        desc="Browse verified student blood donors, view sent blood requests, and respond to campus medical needs."
       />
 
       {/* 2026 Emergency & Saviour Hero */}
@@ -158,8 +189,18 @@ export default function BloodBankPage() {
             </div>
             <h2 className="blood-hero-title">Verified Campus Donors. Immediate Support.</h2>
             <p className="blood-hero-desc">
-              Donor contact numbers are protected by default. To initiate contact for a medical emergency, submit a formal request to create an entry in the blood requests registry.
+              Donor contact numbers are protected by default. Submitting a request creates an entry in the blood_requests registry and unlocks contact details for emergency responders.
             </p>
+
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", marginTop: "16px" }}>
+              <button
+                className="primary"
+                onClick={() => handleOpenRequestModal(null)}
+                style={{ background: "#f43f5e" }}
+              >
+                <PlusCircle size={16} /> Post Emergency Blood Request
+              </button>
+            </div>
           </div>
 
           <div style={{ textAlign: "center", position: "relative" }}>
@@ -193,6 +234,27 @@ export default function BloodBankPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Navigation Tabs Bar */}
+      <div className="blood-nav-tabs">
+        <button
+          className={`blood-tab-btn ${activeTab === "donors" ? "active" : ""}`}
+          onClick={() => setActiveTab("donors")}
+        >
+          <Users size={18} />
+          Registered Donors Directory
+          <span className="blood-tab-badge">{donors.length}</span>
+        </button>
+
+        <button
+          className={`blood-tab-btn ${activeTab === "requests" ? "active" : ""}`}
+          onClick={() => setActiveTab("requests")}
+        >
+          <Megaphone size={18} />
+          Sent Blood Requests
+          <span className="blood-tab-badge">{requests.length}</span>
+        </button>
       </div>
 
       {/* Quick Stats Bar */}
@@ -233,172 +295,314 @@ export default function BloodBankPage() {
           </div>
           <div className="blood-stat-info">
             <strong>{requests.length}</strong>
-            <span>Active Blood Requests</span>
+            <span>Active Sent Requests</span>
           </div>
         </div>
       </div>
 
-      {/* Blood Group Filter & Search Bar */}
-      <div className="blood-filter-section">
-        <div className="blood-filter-top">
-          <div>
-            <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
-              Blood Donors Directory ({donors.length})
-            </h3>
-            <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
-              Filter by blood group or search by student name/department.
-            </p>
+      {/* TAB 1: DONORS DIRECTORY */}
+      {activeTab === "donors" && (
+        <>
+          {/* Blood Group Filter & Search Bar */}
+          <div className="blood-filter-section">
+            <div className="blood-filter-top">
+              <div>
+                <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
+                  Blood Donors Directory ({donors.length})
+                </h3>
+                <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                  Filter by blood group or search by student name/department.
+                </p>
+              </div>
+
+              <form onSubmit={handleSearchSubmit} className="blood-search-input">
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder="Search donor by name or department..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </form>
+            </div>
+
+            {/* Blood Group Filter Pills */}
+            <div className="blood-groups-pills">
+              {bloodGroups.map((bg) => {
+                const count = getBloodGroupCount(bg);
+                return (
+                  <button
+                    key={bg}
+                    className={`blood-pill ${selectedBloodGroup === bg ? "active" : ""}`}
+                    onClick={() => setSelectedBloodGroup(bg)}
+                  >
+                    <span>{bg === "ALL" ? "All Groups" : bg}</span>
+                    <span className="blood-pill-count">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: "flex", gap: "16px", marginTop: "14px", alignItems: "center" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer", color: "#334155" }}>
+                <input
+                  type="checkbox"
+                  checked={eligibleOnly}
+                  onChange={(e) => setEligibleOnly(e.target.checked)}
+                  style={{ accentColor: "#e11d48" }}
+                />
+                Show <b>Eligible Donors Only</b> (Ready to donate today)
+              </label>
+            </div>
           </div>
 
-          <form onSubmit={handleSearchSubmit} className="blood-search-input">
-            <Search size={16} />
-            <input
-              type="text"
-              placeholder="Search donor by name or department..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </form>
-        </div>
+          {/* Donors Cards List */}
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
+              <Droplets className="spin" size={32} color="#e11d48" />
+              <p style={{ marginTop: "12px", fontSize: "13px" }}>Loading verified blood donors...</p>
+            </div>
+          ) : error ? (
+            <div className="error-state">
+              <AlertCircle size={20} />
+              <p>{error}</p>
+            </div>
+          ) : donors.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 20px", background: "#ffffff", borderRadius: "18px", border: "1px dashed #cbd5e1" }}>
+              <Droplets size={44} color="#f43f5e" style={{ opacity: 0.5 }} />
+              <h4 style={{ margin: "12px 0 6px 0", fontSize: "16px", color: "#0f172a" }}>No Donors Found</h4>
+              <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                No donors match the selected blood group or search query.
+              </p>
+            </div>
+          ) : (
+            <div className="donor-cards-grid">
+              {donors.map((donor) => {
+                const { isEligible } = bloodBankService.calculateEligibility(donor.lastDonation);
+                return (
+                  <div key={donor.id} className="donor-card-2026">
+                    <div>
+                      <div className="donor-card-top">
+                        <div className="donor-blood-badge">
+                          {donor.bloodGroup}
+                          <span>{donor.bloodGroup === "O-" ? "Universal" : "Group"}</span>
+                        </div>
 
-        {/* Blood Group Filter Pills */}
-        <div className="blood-groups-pills">
-          {bloodGroups.map((bg) => {
-            const count = getBloodGroupCount(bg);
-            return (
-              <button
-                key={bg}
-                className={`blood-pill ${selectedBloodGroup === bg ? "active" : ""}`}
-                onClick={() => setSelectedBloodGroup(bg)}
-              >
-                <span>{bg === "ALL" ? "All Groups" : bg}</span>
-                <span className="blood-pill-count">{count}</span>
-              </button>
-            );
-          })}
-        </div>
+                        <div className="donor-meta">
+                          <h4>
+                            {donor.name}
+                            {donor.verified && <ShieldCheck size={16} color="#2563eb" title="Verified Saviour" />}
+                          </h4>
+                          <span className="donor-dept">{donor.department || "Campus Student"}</span>
 
-        <div style={{ display: "flex", gap: "16px", marginTop: "14px", alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "12px", cursor: "pointer", color: "#334155" }}>
-            <input
-              type="checkbox"
-              checked={eligibleOnly}
-              onChange={(e) => setEligibleOnly(e.target.checked)}
-              style={{ accentColor: "#e11d48" }}
-            />
-            Show <b>Eligible Donors Only</b> (Ready to donate today)
-          </label>
-        </div>
-      </div>
+                          <div className="donor-tags-row">
+                            {isEligible ? (
+                              <span className="donor-tag eligible">
+                                <CheckCircle2 size={10} /> Ready to Donate
+                              </span>
+                            ) : (
+                              <span className="donor-tag cooldown">
+                                <Clock size={10} /> Cooldown
+                              </span>
+                            )}
+                            <span className="privacy-badge">
+                              <Lock size={10} /> Contact Locked
+                            </span>
+                          </div>
+                        </div>
+                      </div>
 
-      {/* Donors Cards List */}
-      {loading ? (
-        <div style={{ textAlign: "center", padding: "40px 0", color: "#64748b" }}>
-          <Droplets className="spin" size={32} color="#e11d48" />
-          <p style={{ marginTop: "12px", fontSize: "13px" }}>Loading verified blood donors...</p>
-        </div>
-      ) : error ? (
-        <div className="error-state">
-          <AlertCircle size={20} />
-          <p>{error}</p>
-        </div>
-      ) : donors.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "48px 20px", background: "#ffffff", borderRadius: "18px", border: "1px dashed #cbd5e1" }}>
-          <Droplets size={44} color="#f43f5e" style={{ opacity: 0.5 }} />
-          <h4 style={{ margin: "12px 0 6px 0", fontSize: "16px", color: "#0f172a" }}>No Donors Found</h4>
-          <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
-            No donors match the selected blood group or search query.
-          </p>
-        </div>
-      ) : (
-        <div className="donor-cards-grid">
-          {donors.map((donor) => {
-            const { isEligible } = bloodBankService.calculateEligibility(donor.lastDonation);
-            return (
-              <div key={donor.id} className="donor-card-2026">
-                <div>
-                  <div className="donor-card-top">
-                    <div className="donor-blood-badge">
-                      {donor.bloodGroup}
-                      <span>{donor.bloodGroup === "O-" ? "Universal" : "Group"}</span>
-                    </div>
-
-                    <div className="donor-meta">
-                      <h4>
-                        {donor.name}
-                        {donor.verified && <ShieldCheck size={16} color="#2563eb" title="Verified Saviour" />}
-                      </h4>
-                      <span className="donor-dept">{donor.department || "Campus Student"}</span>
-
-                      <div className="donor-tags-row">
-                        {isEligible ? (
-                          <span className="donor-tag eligible">
-                            <CheckCircle2 size={10} /> Ready to Donate
-                          </span>
-                        ) : (
-                          <span className="donor-tag cooldown">
-                            <Clock size={10} /> Cooldown
-                          </span>
-                        )}
-                        <span className="privacy-badge">
-                          <Lock size={10} /> Contact Locked
+                      <div className="donor-donation-info">
+                        <Calendar size={14} />
+                        <span>
+                          {donor.lastDonation ? `Last donated: ${donor.lastDonation}` : "First-time donor"}
                         </span>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="donor-donation-info">
-                    <Calendar size={14} />
-                    <span>
-                      {donor.lastDonation ? `Last donated: ${donor.lastDonation}` : "First-time donor"}
-                    </span>
+                    <div className="donor-card-actions">
+                      <button
+                        className="btn-request-blood"
+                        onClick={() => handleOpenRequestModal(donor)}
+                      >
+                        <HeartPulse size={15} /> Request Blood (Creates Request)
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                <div className="donor-card-actions">
-                  <button
-                    className="btn-request-blood"
-                    onClick={() => handleOpenRequestModal(donor)}
-                  >
-                    <HeartPulse size={15} /> Request Blood (Creates Request)
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
-      {/* Modal Dialog for Submitting Blood Request & Unlocking Contact */}
-      {targetDonor && (
-        <div className="blood-modal-overlay" onClick={() => setTargetDonor(null)}>
+      {/* TAB 2: SENT BLOOD REQUESTS */}
+      {activeTab === "requests" && (
+        <>
+          <div className="blood-filter-section">
+            <div className="blood-filter-top">
+              <div>
+                <h3 style={{ margin: "0 0 4px 0", fontSize: "16px", fontWeight: "800", color: "#0f172a" }}>
+                  All Sent Blood Requests ({requests.length})
+                </h3>
+                <p style={{ margin: 0, fontSize: "12px", color: "#64748b" }}>
+                  Emergency and general blood requests registered in the platform database (`blood_requests` table).
+                </p>
+              </div>
+
+              <button
+                className="primary"
+                onClick={() => handleOpenRequestModal(null)}
+                style={{ background: "#e11d48" }}
+              >
+                <PlusCircle size={15} /> Create New Blood Request
+              </button>
+            </div>
+
+            {/* Filter pills for requests */}
+            <div className="blood-groups-pills">
+              <button
+                className={`blood-pill ${requestFilter === "ALL" ? "active" : ""}`}
+                onClick={() => setRequestFilter("ALL")}
+              >
+                All Requests ({requests.length})
+              </button>
+              <button
+                className={`blood-pill ${requestFilter === "CRITICAL" ? "active" : ""}`}
+                onClick={() => setRequestFilter("CRITICAL")}
+              >
+                Urgent / Critical ({requests.filter((r) => r.urgency === "critical" || r.urgency === "high").length})
+              </button>
+              <button
+                className={`blood-pill ${requestFilter === "SEARCHING" ? "active" : ""}`}
+                onClick={() => setRequestFilter("SEARCHING")}
+              >
+                Open / Searching ({requests.filter((r) => r.status === "searching" || r.status === "open").length})
+              </button>
+              <button
+                className={`blood-pill ${requestFilter === "FULFILLED" ? "active" : ""}`}
+                onClick={() => setRequestFilter("FULFILLED")}
+              >
+                Fulfilled ({requests.filter((r) => r.status === "fulfilled").length})
+              </button>
+            </div>
+          </div>
+
+          {filteredRequests.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 20px", background: "#ffffff", borderRadius: "18px", border: "1px dashed #cbd5e1" }}>
+              <AlertCircle size={44} color="#f43f5e" style={{ opacity: 0.5 }} />
+              <h4 style={{ margin: "12px 0 6px 0", fontSize: "16px", color: "#0f172a" }}>No Requests Found</h4>
+              <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>
+                No sent blood requests match the selected filter.
+              </p>
+            </div>
+          ) : (
+            <div className="requests-grid">
+              {filteredRequests.map((req) => (
+                <div key={req.id} className={`request-card-2026 ${req.urgency === "critical" ? "critical" : ""}`}>
+                  <div>
+                    <div className="request-card-top">
+                      <div className="donor-blood-badge">
+                        {req.bloodGroup}
+                        <span>{req.units || "Blood"}</span>
+                      </div>
+
+                      <div className="donor-meta">
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px" }}>
+                          <h4 style={{ margin: 0 }}>{req.requester}</h4>
+                          <span className={`request-urgency-tag ${req.urgency}`}>
+                            {req.urgency === "critical" ? "🔴 CRITICAL" : req.urgency === "high" ? "🟧 Urgent" : "🟢 Open"}
+                          </span>
+                        </div>
+                        <span className="donor-dept" style={{ marginTop: "4px" }}>
+                          Posted: {req.createdAt}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="request-details-box">
+                      <div className="request-detail-item">
+                        <MapPin size={15} />
+                        <span><strong>Hospital / Location:</strong> {req.hospital}</span>
+                      </div>
+
+                      <div className="request-detail-item">
+                        <Phone size={15} />
+                        <span><strong>Emergency Contact:</strong> {req.contact}</span>
+                      </div>
+
+                      {req.notes && (
+                        <div className="request-detail-item">
+                          <FileText size={15} />
+                          <span><strong>Notes:</strong> {req.notes}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", gap: "10px", marginTop: "auto" }}>
+                    <a
+                      href={`tel:${req.contact.replace(/[^0-9+]/g, "")}`}
+                      className="btn-request-blood"
+                      style={{ textDecoration: "none" }}
+                    >
+                      <PhoneCall size={14} /> Call Attendant
+                    </a>
+
+                    {req.status !== "fulfilled" ? (
+                      <button
+                        className="btn-contact-outline"
+                        onClick={() => handleFulfillRequest(req.id)}
+                      >
+                        <CheckCircle2 size={14} color="#16a34a" /> Mark Fulfilled
+                      </button>
+                    ) : (
+                      <span className="pill status green" style={{ alignSelf: "center", padding: "8px 12px", fontSize: "11px" }}>
+                        ✓ Fulfilled
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Modal Dialog for Submitting Blood Request */}
+      {(targetDonor || isGeneralRequestModal) && (
+        <div className="blood-modal-overlay" onClick={() => { setTargetDonor(null); setIsGeneralRequestModal(false); }}>
           <div className="blood-modal" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                 <HeartPulse size={24} color="#e11d48" />
-                <h3 style={{ margin: 0, fontSize: "18px", color: "#0f172a" }}>Submit Blood Request for Donor</h3>
+                <h3 style={{ margin: 0, fontSize: "18px", color: "#0f172a" }}>
+                  {targetDonor ? `Request Blood from ${targetDonor.name}` : "Create General Blood Request"}
+                </h3>
               </div>
               <button
-                onClick={() => setTargetDonor(null)}
+                onClick={() => { setTargetDonor(null); setIsGeneralRequestModal(false); }}
                 style={{ background: "transparent", border: "none", cursor: "pointer", color: "#64748b" }}
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div style={{ background: "#fff1f2", padding: "12px 14px", borderRadius: "12px", border: "1px solid #fecdd3", marginBottom: "16px" }}>
-              <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-                <div className="donor-blood-badge" style={{ width: "42px", height: "46px", fontSize: "15px" }}>
-                  {targetDonor.bloodGroup}
-                </div>
-                <div>
-                  <h4 style={{ margin: 0, fontSize: "14px", color: "#881337" }}>Requested Donor: {targetDonor.name}</h4>
-                  <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#9f1239" }}>
-                    {targetDonor.department}
-                  </p>
+            {targetDonor && (
+              <div style={{ background: "#fff1f2", padding: "12px 14px", borderRadius: "12px", border: "1px solid #fecdd3", marginBottom: "16px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+                  <div className="donor-blood-badge" style={{ width: "42px", height: "46px", fontSize: "15px" }}>
+                    {targetDonor.bloodGroup}
+                  </div>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: "14px", color: "#881337" }}>Requested Donor: {targetDonor.name}</h4>
+                    <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: "#9f1239" }}>
+                      {targetDonor.department}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {unlockedContact ? (
               <div style={{ padding: "16px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "14px", marginBottom: "16px" }}>
@@ -427,6 +631,20 @@ export default function BloodBankPage() {
                 <p style={{ fontSize: "12px", color: "#64748b", marginBottom: "14px", lineHeight: "1.4" }}>
                   In accordance with privacy rules, submitting this form registers a record in `blood_requests` and notifies the donor.
                 </p>
+
+                {!targetDonor && (
+                  <div className="form-group">
+                    <label>Blood Group Required *</label>
+                    <select
+                      value={requestForm.bloodGroup}
+                      onChange={(e) => setRequestForm({ ...requestForm, bloodGroup: e.target.value })}
+                    >
+                      {bloodBankService.getBloodGroups().map((bg) => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="form-group">
                   <label>Hospital / Campus Medical Location *</label>
@@ -494,7 +712,11 @@ export default function BloodBankPage() {
                   >
                     <Send size={15} /> {submittingRequest ? "Submitting..." : "Confirm & Create Request"}
                   </button>
-                  <button type="button" className="btn-contact-outline" onClick={() => setTargetDonor(null)}>
+                  <button
+                    type="button"
+                    className="btn-contact-outline"
+                    onClick={() => { setTargetDonor(null); setIsGeneralRequestModal(false); }}
+                  >
                     Cancel
                   </button>
                 </div>

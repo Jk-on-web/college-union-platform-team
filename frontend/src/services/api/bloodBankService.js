@@ -207,6 +207,20 @@ export const bloodBankService = {
     return apiRequest("/api/blood-bank/requests", { method: "GET" });
   },
 
+  async updateRequestStatus(requestId, status) {
+    if (DEMO_MODE) {
+      const req = DEMO_BLOOD_REQUESTS.find((r) => r.id === requestId);
+      if (req) {
+        req.status = status;
+      }
+      return { ok: true, data: req };
+    }
+    return apiRequest(`/api/blood-bank/requests/${requestId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    });
+  },
+
   async getHelplines() {
     return { ok: true, data: CAMPUS_HELPLINES };
   },
