@@ -45,3 +45,12 @@ POST /api/notifications/{id}/read
 POST /api/notifications/read-all
 PATCH /api/notification-preferences
 POST /api/devices/register
+
+## Blood Bank
+GET /api/blood-bank/donors
+POST /api/blood-bank/donors/register
+GET /api/blood-bank/requests
+POST /api/blood-bank/requests
+PATCH /api/blood-bank/requests/{id}/status
+GET /api/blood-bank/helplines
+
