@@ -111,17 +111,15 @@ export default function AcademicsPage() {
   // ── Browse: filter state ───────────────────────────────────────────────────
   const [departments, setDepartments]   = useState([]);
   const [semesters,   setSemesters]     = useState([]);
-  const [subjects,    setSubjects]      = useState([]);
   const [filterDept,  setFilterDept]    = useState("");
   const [filterSem,   setFilterSem]     = useState("");
-  const [filterSubj,  setFilterSubj]    = useState("");
   const [filterType,  setFilterType]    = useState("");
   const [searchQuery, setSearchQuery]   = useState("");
 
   // ── Browse: materials state ────────────────────────────────────────────────
-  const [materials, setMaterials] = useState([]);
+  const [materials, setMaterials]   = useState([]);
   const [matLoading, setMatLoading] = useState(false);
-  const [matError, setMatError] = useState(null);
+  const [matError, setMatError]     = useState(null);
 
   // ── My Uploads state ──────────────────────────────────────────────────────
   const [myUploads,       setMyUploads]       = useState([]);
@@ -142,27 +140,13 @@ export default function AcademicsPage() {
   useEffect(() => {
     if (!filterDept) {
       setSemesters([]);
-      setSubjects([]);
       setFilterSem("");
-      setFilterSubj("");
       return;
     }
     academicsService.getSemesters(filterDept).then((res) => {
       if (res.ok) setSemesters(res.data || []);
     });
   }, [filterDept]);
-
-  // ── Cascade: subjects when semester changes ────────────────────────────────
-  useEffect(() => {
-    if (!filterSem || !filterDept) {
-      setSubjects([]);
-      setFilterSubj("");
-      return;
-    }
-    academicsService.getSubjects(filterSem, filterDept).then((res) => {
-      if (res.ok) setSubjects(res.data || []);
-    });
-  }, [filterSem, filterDept]);
 
   // ── Load materials on browse tab or filter change ──────────────────────────
   const loadMaterials = useCallback(async () => {
@@ -173,8 +157,7 @@ export default function AcademicsPage() {
 
       if (filterDept) {
         filters.department_id = filterDept;
-        if (filterSem)  filters.semester_id = filterSem;
-        if (filterSubj) filters.subject_id  = filterSubj;
+        if (filterSem) filters.semester_id = filterSem;
       }
 
       if (filterType)   filters.material_type = filterType;
@@ -191,7 +174,7 @@ export default function AcademicsPage() {
     } finally {
       setMatLoading(false);
     }
-  }, [filterDept, filterSem, filterSubj, filterType, searchQuery]);
+  }, [filterDept, filterSem, filterType, searchQuery]);
 
   useEffect(() => {
     if (tab === "browse") loadMaterials();
@@ -269,7 +252,6 @@ export default function AcademicsPage() {
   const handleDeptFilter = (deptId) => {
     setFilterDept(deptId);
     setFilterSem("");
-    setFilterSubj("");
     setFilterType("");
     setSearchQuery("");
     setTab("browse");
@@ -278,7 +260,6 @@ export default function AcademicsPage() {
   // ── Breadcrumb label helpers ───────────────────────────────────────────────
   const activeDeptName = departments.find((d) => d.id === filterDept)?.name || "";
   const activeSemName  = semesters.find((s) => s.id === filterSem)?.name || "";
-  const activeSubjName = subjects.find((s) => s.id === filterSubj)?.name || "";
 
   const materialTypes = academicsService.getMaterialTypes();
 
@@ -287,7 +268,7 @@ export default function AcademicsPage() {
       <PageHead
         eyebrow="ACADEMIC RESOURCE HUB"
         title="Academics"
-        desc="Department → Semester → Subject → Study Materials"
+        desc="Department → Semester → Study Materials"
         action={
           permissionService.hasPermission("UPLOAD_MATERIAL", user?.role) ? (
             <button className="primary" onClick={handleUploadTab}>
@@ -377,10 +358,8 @@ export default function AcademicsPage() {
                 const nextDept = e.target.value;
                 setFilterDept(nextDept);
                 setFilterSem("");
-                setFilterSubj("");
                 if (!nextDept) {
                   setSemesters([]);
-                  setSubjects([]);
                 }
               }}
               style={{ borderRadius: "8px", padding: "8px 10px", fontSize: "11px" }}
@@ -413,30 +392,11 @@ export default function AcademicsPage() {
                 onChange={(e) => {
                   const nextSem = e.target.value;
                   setFilterSem(nextSem);
-                  setFilterSubj("");
-                  if (!nextSem) setSubjects([]);
                 }}
                 style={{ borderRadius: "8px", padding: "8px 10px", fontSize: "11px" }}
               >
                 <option value="">All Semesters</option>
                 {semesters.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Subject */}
-            {filterDept && filterSem && subjects.length > 0 && (
-              <select
-                className="filter"
-                value={filterSubj}
-                onChange={(e) => setFilterSubj(e.target.value)}
-                style={{ borderRadius: "8px", padding: "8px 10px", fontSize: "11px" }}
-              >
-                <option value="">All Subjects</option>
-                {subjects.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
@@ -460,18 +420,16 @@ export default function AcademicsPage() {
             </select>
 
             {/* Clear filters */}
-            {(filterDept || filterSem || filterSubj || filterType || searchQuery) && (
+            {(filterDept || filterSem || filterType || searchQuery) && (
               <button
                 className="textbtn"
                 style={{ fontSize: "11px" }}
                 onClick={() => {
                   setFilterDept("");
                   setFilterSem("");
-                  setFilterSubj("");
                   setFilterType("");
                   setSearchQuery("");
                   setSemesters([]);
-                  setSubjects([]);
                 }}
               >
                 Clear filters
@@ -480,11 +438,10 @@ export default function AcademicsPage() {
           </div>
 
           {/* Breadcrumb path */}
-          {(activeDeptName || activeSemName || activeSubjName) && (
+          {(activeDeptName || activeSemName) && (
             <div className="academic-path">
               {activeDeptName && <span>{activeDeptName}</span>}
-              {activeSemName  && <><ChevronRight /><span>{activeSemName}</span></>}
-              {activeSubjName && <><ChevronRight /><b>{activeSubjName}</b></>}
+              {activeSemName  && <><ChevronRight /><b>{activeSemName}</b></>}
             </div>
           )}
 
@@ -511,18 +468,16 @@ export default function AcademicsPage() {
             <div style={{ textAlign: "center", padding: "60px 20px", color: "var(--muted)" }}>
               <FileText size={40} style={{ marginBottom: "12px", opacity: 0.4 }} />
               <p style={{ margin: 0, fontSize: "13px" }}>No approved materials found for this selection.</p>
-              {(filterDept || filterSem || filterSubj || filterType || searchQuery) && (
+              {(filterDept || filterSem || filterType || searchQuery) && (
                 <button
                   className="textbtn"
                   style={{ marginTop: "10px", fontSize: "12px" }}
                   onClick={() => {
                     setFilterDept("");
                     setFilterSem("");
-                    setFilterSubj("");
                     setFilterType("");
                     setSearchQuery("");
                     setSemesters([]);
-                    setSubjects([]);
                   }}
                 >
                   Clear filters and show all
@@ -587,6 +542,7 @@ export default function AcademicsPage() {
                   notify(msg);
                   setTimeout(() => loadMyUploads(), 600);
                 }}
+                onRequestDept={() => setDeptModalOpen(true)}
               />
 
               <div style={{ margin: "28px 0 18px", display: "flex", alignItems: "center", gap: "12px" }}>
@@ -764,20 +720,6 @@ export default function AcademicsPage() {
             ))}
           </div>
         </>
-      )}
-
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {/* TAB — Maintainer Review                                            */}
-      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-      {tab === "review" && (
-        permissionService.hasPermission("REVIEW_MATERIAL", user?.role) ? (
-          <ReviewQueue notify={notify} user={user} />
-        ) : (
-          <Card style={{ textAlign: "center", padding: "60px 20px" }}>
-            <Lock size={40} style={{ marginBottom: "10px", opacity: 0.4 }} />
-            <p>Only maintainers and admins can review materials.</p>
-          </Card>
-        )
       )}
 
       {/* ── Global Modal ───────────────────────────────────────────────────── */}
