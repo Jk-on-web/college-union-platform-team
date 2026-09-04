@@ -874,17 +874,31 @@ export const academicsService = {
     return { ok: true, message: "Department updated." };
   },
 
-  async adminDeleteDepartment(deptId) {
-    if (isSupabaseConfigured()) {
-      try {
-        await supabaseRest.delete("departments", `id=eq.${deptId}`);
-        return { ok: true, message: "Department deleted." };
-      } catch (err) {
-        return { ok: false, error: err.message };
-      }
+async adminDeleteDepartment(departmentId) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/departments?id=eq.${departmentId}`, {
+      method: "DELETE",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        "Prefer": "return=representation", // 👈 Tells Supabase to return JSON instead of empty 204
+      },
+    });
+
+    if (res.status === 204) {
+      return { ok: true, message: "Department deleted successfully" };
     }
 
-    demoDeptStore = demoDeptStore.filter((d) => d.id !== deptId);
-    return { ok: true, message: "Department deleted." };
-  },
+    const text = await res.text();
+    const data = text ? JSON.parse(text) : null;
+
+    if (!res.ok) {
+      return { ok: false, error: data?.message || "Failed to delete department" };
+    }
+
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+},
 };
